@@ -1,23 +1,21 @@
-from PIL import Image 
+import base64
+import json
+from openai import OpenAI
 
-import pillow_heif
+# load api key
+with open ('config.json') as config:
+    data = json.load(config)
 
-import pytesseract
+client = OpenAI(api_key=data['api_key'])
 
-heif_file = pillow_heif.read_heif('images/test.heic')
-image = Image.frombytes(
-    heif_file.mode,
-    heif_file.size,
-    heif_file.data,
-    "raw",
+batch_file = client.files.create(
+    file=open('batch_tasks_words.jsonl','rb'),
+    purpose='batch'
 )
+print(batch_file)
 
-image.save("images/test.jpeg", format("jpeg"))
-
-
-# code required to make heif work
-
-
-print(pytesseract.image_to_string(image,lang='jpn'))
-
-print(pytesseract.image_to_string('images/test.jpeg',lang='jpn'))
+batch_job = client.batches.create(
+  input_file_id=batch_file.id,
+  endpoint="/v1/chat/completions",
+  completion_window="24h"
+)
